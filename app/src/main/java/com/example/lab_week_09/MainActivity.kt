@@ -16,6 +16,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.lab_week_09.ui.theme.LAB_WEEK_09Theme
+import com.example.lab_week_09.ui.theme.OnBackgroundItemText
+import com.example.lab_week_09.ui.theme.OnBackgroundTitleText
+import com.example.lab_week_09.ui.theme.PrimaryTextButton
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -122,55 +125,38 @@ fun HomeContent(
 ) {
 
     LazyColumn {
-
         item {
-
             Column(
-
                 modifier = Modifier
-
                     .padding(16.dp)
-
                     .fillMaxSize(),
-
                 horizontalAlignment = Alignment.CenterHorizontally
-
             ) {
-
-                Text(text = stringResource(id = R.string.enter_item))
-
-
-
+                OnBackgroundTitleText(text = stringResource(
+                    id = R.string.enter_item)
+                )
                 TextField(
-
                     value = inputField.name,
-
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-
                     onValueChange = { onInputValueChange(it) }
 
                 )
-
-
-
-                Button(onClick = { onButtonClick() }) {
-
-                    Text(text = stringResource(id = R.string.button_click))
+                PrimaryTextButton(text = stringResource(
+                    id = R.string.button_click)
+                ) {
+                    onButtonClick()
                 }
             }
         }
 
-
-
         items(listData) { item ->
-
             Column(
                 modifier = Modifier
                     .padding(vertical = 4.dp)
                     .fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = item.name)
+                OnBackgroundItemText(text = item.name)
 
             }
         }
