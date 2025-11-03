@@ -3,4 +3,5 @@
     <string name="enter_item">Enter a name</string>
     <string name="button_click">Submit</string>
     <string name="button_navigate">Finish</string>
+    <string name="list_title" />
 </resources>

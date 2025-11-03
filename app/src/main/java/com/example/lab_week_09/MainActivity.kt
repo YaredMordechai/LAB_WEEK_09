@@ -1,3 +1,4 @@
+// MainActivity.kt
 package com.example.lab_week_09
 
 import android.os.Bundle
@@ -30,6 +31,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 
+// Moshi + encoding imports
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import java.net.URLEncoder
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +56,14 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// ---------------------- Moshi Setup (top-level) ----------------------
+private val moshi: Moshi = Moshi.Builder()
+    .add(KotlinJsonAdapterFactory())
+    .build()
+private val studentListType = Types.newParameterizedType(List::class.java, Student::class.java)
+private val studentListAdapter = moshi.adapter<List<Student>>(studentListType)
+
+// ---------------------- App Navigation ----------------------
 @Composable
 fun App(navController: NavHostController) {
     NavHost(navController = navController, startDestination = "home") {
@@ -95,21 +112,22 @@ fun Home(
         showInputError = showError,              // NEW
         onInputValueChange = { input ->
             inputField = inputField.copy(name = input)
-            // Clear error as soon as user types something meaningful
             if (showError && input.trim().isNotEmpty()) showError = false
         },
         onClickSubmit = {
-            // HARD BLOCK: don't add blanks; also trim before add
             if (trimmed.isEmpty()) {
                 showError = true
                 return@HomeContent
             }
             listData.add(Student(trimmed))
-            inputField = Student("")             // reset field
-            showError = false                    // clear error after successful add
+            inputField = Student("")
+            showError = false
         },
         onClickFinish = {
-            navigateFromHomeToResult(listData.toList().toString())
+            // Serialize list ke JSON, URL-encode, lalu kirim
+            val json = studentListAdapter.toJson(listData.toList())
+            val encoded = URLEncoder.encode(json, StandardCharsets.UTF_8.toString())
+            navigateFromHomeToResult(encoded)
         }
     )
 }
@@ -141,7 +159,6 @@ fun HomeContent(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Done
                     ),
-                    // NEW: simple visual error + helper text when user tried to submit empty
                     isError = showInputError,
                     supportingText = {
                         if (showInputError) {
@@ -152,7 +169,6 @@ fun HomeContent(
                 )
 
                 Row {
-                    // NEW: Disable submit when input is blank/whitespace
                     PrimaryTextButton(
                         text = stringResource(id = R.string.button_click),
                         enabled = isSubmitEnabled,
@@ -180,13 +196,47 @@ fun HomeContent(
 
 @Composable
 fun ResultContent(listData: String) {
-    Column(
+    // Decode dari URL, lalu parse JSON ke List<Student>
+    val decodedJson = remember(listData) {
+        try {
+            URLDecoder.decode(listData, StandardCharsets.UTF_8.toString())
+        } catch (_: Exception) {
+            ""
+        }
+    }
+    val students: List<Student> = remember(decodedJson) {
+        try {
+            studentListAdapter.fromJson(decodedJson) ?: emptyList()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    // Tampilkan dengan LazyColumn
+    LazyColumn(
         modifier = Modifier
-            .padding(vertical = 4.dp)
+            .padding(16.dp)
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        OnBackgroundItemText(text = listData)
+        item {
+            OnBackgroundTitleText(text = stringResource(id = R.string.list_title))
+        }
+        items(students) { s ->
+            Column(
+                modifier = Modifier
+                    .padding(vertical = 4.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                OnBackgroundItemText(text = s.name)
+            }
+        }
+        if (students.isEmpty()) {
+            item {
+                OnBackgroundItemText(text = "(No data)")
+            }
+        }
     }
 }
 
